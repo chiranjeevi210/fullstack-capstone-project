@@ -23,7 +23,3 @@ function App() {
 }
 
 export default App;
-cd /home/project/fullstack-capstone-project
-git add .
-git commit -m "feat: design registration and credentials validation client form screen elements"
-git push origin main

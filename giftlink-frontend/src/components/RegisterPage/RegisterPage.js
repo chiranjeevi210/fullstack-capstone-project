@@ -1,3 +1,7 @@
+import { useNavigate } from 'react-router-dom';
+import { urlConfig } from '../../config';
+import { useAppContext } from '../../context/AuthContext';
+
 import React, { useState } from 'react';
 import './RegisterPage.css';
 
@@ -7,11 +11,53 @@ function RegisterPage() {
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    
+    const navigate = useNavigate();
+    const { setIsLoggedIn, setUserName } = useAppContext();
+    const [errorMessage, setErrorMessage] = useState('');
 
-    // Task 5: Define a method handleRegister to print target logs onto console
-    const handleRegister = (e) => {
-        e.preventDefault();
-        console.log("Registration Attempt Profile Details:", { firstName, lastName, email, password });
+    // Consolidated Asynchronous Asynchronous API Handler
+    const handleRegister = async (e) => {
+        if (e) e.preventDefault(); // Prevent standard page reloads
+
+        try {
+            // Step 1: Implement the POST API Call
+            const response = await fetch(`${urlConfig.backendUrl}/api/auth/register`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    firstName: firstName,
+                    lastName: lastName,
+                    email: email,
+                    password: password,
+                }),
+            });
+
+            // Step 2: Process the JSON response payload
+            const data = await response.json();
+
+            if (response.ok) {
+                // Save authenticating token details to session storage
+                sessionStorage.setItem('auth-token', data.authtoken);
+                sessionStorage.setItem('name', firstName);
+                sessionStorage.setItem('email', email);
+
+                // Update application auth states globally
+                setIsLoggedIn(true);
+                setUserName(firstName);
+
+                // Redirect user to the main platform page
+                navigate('/app');
+            } else {
+                // Capture specific server validation failures
+                setErrorMessage(data.error || 'Registration failed. Please check your details.');
+            }
+        } catch (e) {
+            console.error("Error fetching details: " + e.message);
+            setErrorMessage('Network connection lost. Please try again later.');
+        }
     };
 
     return (
@@ -33,6 +79,13 @@ function RegisterPage() {
                             <div className="mb-3">
                                 <label className="form-label fw-semibold">Email Address</label>
                                 <input type="email" className="form-control" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                                
+                                {/* Target rendering container for display error strings objective checks */}
+                                {errorMessage && (
+                                    <div className="text-danger small mt-1 font-weight-bold" role="alert">
+                                        {errorMessage}
+                                    </div>
+                                )}
                             </div>
                             <div className="mb-3">
                                 <label className="form-label fw-semibold">Password</label>
