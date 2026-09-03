@@ -1,50 +1,57 @@
-require('dotenv').config();
-const MongoClient = require('mongodb').MongoClient;
-const fs = require('fs');
+const express = require('express');
+const natural = require('natural');
+const dotenv = require('dotenv');
 
-// MongoDB connection URL with authentication options
-let url = `${process.env.MONGO_URL}`;
-let filename = `${__dirname}/gifts.json`;
-const dbName = 'giftdb';
-const collectionName = 'gifts';
+dotenv.config();
 
-// notice you have to load the array of gifts into the data object
-const data = JSON.parse(fs.readFileSync(filename, 'utf8')).docs;
+const app = express();
+app.use(express.json());
 
-// connect to database and insert data into the collection
-async function loadData() {
-    const client = new MongoClient(url);
+const logger = require('pino')();
+
+// Initialize the Natural Sentiment Analyzer (using English Porter Stemmer)
+const Analyzer = natural.SentimentAnalyzer;
+const stemmer = natural.PorterStemmer;
+const analyzer = new Analyzer('English', stemmer, 'afinn');
+
+// Create a POST /sentiment endpoint
+app.post('/sentiment', async (req, res) => {
+    const { sentence } = req.body;
+
+    if (!sentence || sentence.trim() === "") {
+        logger.error("No sentence provided in request body");
+        return res.status(400).json({ error: "Parameter 'sentence' is required and cannot be empty." });
+    }
 
     try {
-        // Connect to the MongoDB client
-        await client.connect();
-        console.log("Connected successfully to server");
+        // Tokenize the input sentence string into distinct word elements
+        const tokenizer = new natural.WordTokenizer();
+        const words = tokenizer.tokenize(sentence);
 
-        // database will be created if it does not exist
-        const db = client.db(dbName);
+        // Calculate sentiment raw score values
+        const score = analyzer.getSentiment(words);
 
-        // collection will be created if it does not exist
-        const collection = db.collection(collectionName);
-        let cursor = await collection.find({});
-        let documents = await cursor.toArray();
-
-        if(documents.length == 0) {
-            // Insert data into the collection
-            const insertResult = await collection.insertMany(data);
-            console.log('Inserted documents:', insertResult.insertedCount);
+        // Process response by mapping score bounds to tags
+        let sentiment = 'neutral';
+        if (score < 0) {
+            sentiment = 'negative'; // If score is < 0, sentiment is negative
+        } else if (score > 0.33) {
+            sentiment = 'positive'; // If score is > 0.33, sentiment is positive
         } else {
-            console.log("Gifts already exists in DB")
+            sentiment = 'neutral';  // If score is between 0 and 0.33, sentiment is neutral
         }
-    } catch (err) {
-        console.error(err);
-    } finally {
-        // Close the connection
-        await client.close();
+
+        logger.info(`Sentiment analysis complete. Score: ${score}, Sentiment: ${sentiment}`);
+        res.status(200).json({ score: score, sentiment: sentiment });
+
+    } catch (error) {
+        logger.error(`Error during processing: ${error.message}`);
+        res.status(500).json({ error: "Internal Server Error during processing sentiment analysis." });
     }
-}
+});
 
-loadData();
-
-module.exports = {
-    loadData,
-  };
+// Start the server on port 8080
+const PORT = process.env.PORT || 8080;
+app.listen(PORT, () => {
+    logger.info(`Sentiment Analysis Service running on port ${PORT}`);
+});
