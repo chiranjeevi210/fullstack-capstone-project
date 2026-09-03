@@ -2,37 +2,37 @@ const express = require('express');
 const router = express.Router();
 const connectToDatabase = require('../models/db');
 
-// Search for gifts
+// Step 1: Define the search endpoint base router logic
 router.get('/', async (req, res, next) => {
     try {
-        // Task 1: Connect to MongoDB using connectToDatabase database. Remember to use the await keyword and store the connection in `db`
-        // {{insert code here}}
-
+        // Task 1: Connect to MongoDB and retrieve the gifts collection database reference
+        const db = await connectToDatabase();
         const collection = db.collection("gifts");
 
-        // Initialize the query object
+        // Initialize a clean query mapping placeholder configuration object
         let query = {};
 
-        // Add the name filter to the query if the name parameter is not empty
-        // if (/* {{insert code here}} */) {
-            query.name = { $regex: req.query.name, $options: "i" }; // Using regex for partial match, case-insensitive
-        // }
+        // Task 2: Check if the name exists, is not empty, and apply evaluation regex matching parameters
+        if (req.query.name && req.query.name.trim() !== "") {
+            query.name = { $regex: req.query.name, $options: "i" };
+        }
 
-        // Task 3: Add other filters to the query
+        // Task 3: Add the other three dynamic filter properties seamlessly to the query object
         if (req.query.category) {
-            // {{insert code here}}
+            query.category = req.query.category;
         }
         if (req.query.condition) {
-            // {{insert code here}} 
+            query.condition = req.query.condition;
         }
         if (req.query.age_years) {
-            // {{insert code here}}
-            query.age_years = { $lte: parseInt(req.query.age_years) };
+            // Ensure data maps down cleanly as numerical variables matching schema traits
+            query.age_years = { $lte: parseFloat(req.query.age_years) };
         }
 
-        // Task 4: Fetch filtered gifts using the find(query) method. Make sure to use await and store the result in the `gifts` constant
-        // {{insert code here here}}
+        // Task 4: Fetch filtered gifts records out matching criteria metrics array rows
+        const gifts = await collection.find(query).toArray();
 
+        // Send back search matching elements array back directly as a network payload array response
         res.json(gifts);
     } catch (e) {
         next(e);

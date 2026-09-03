@@ -2,14 +2,18 @@ const express = require('express');
 const app = express();
 const dotenv = require('dotenv');
 
+// 1. Initialize Environment Variables BEFORE importing routes
 dotenv.config();
 
-// Task 1: Import the giftRoutes and store in a constant called giftRoutes
-const giftRoutes = require('./routes/giftRoutes');
-
+// 2. Global Body Parsing Middleware
 app.use(express.json());
 
-// Task 2: Add the giftRoutes to the server using the app.use() method
+// 3. Import Router Definitions
+const searchRoutes = require('./routes/searchRoutes');
+const giftRoutes = require('./routes/giftRoutes');
+
+// 4. Mount API Middleware Endpoint Targets 
+app.use('/api/search', searchRoutes);
 app.use('/api/gifts', giftRoutes);
 
 // Global Error Handler
