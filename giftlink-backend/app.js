@@ -1,57 +1,27 @@
-/*jshint esversion: 8 */
-require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
-const pinoLogger = require('./logger');
-
-const connectToDatabase = require('./models/db');
-const {loadData} = require("./util/import-mongo/index");
-
-
 const app = express();
-app.use("*",cors());
-const port = 3060;
+const dotenv = require('dotenv');
 
-// Connect to MongoDB; we just do this one time
-connectToDatabase().then(() => {
-    pinoLogger.info('Connected to DB');
-})
-    .catch((e) => console.error('Failed to connect to DB', e));
+dotenv.config();
 
+// Task 1: Import the giftRoutes and store in a constant called giftRoutes
+const giftRoutes = require('./routes/giftRoutes');
 
 app.use(express.json());
 
-// Route files
-// Gift API Task 1: import the giftRoutes and store in a constant called giftroutes
-//{{insert code here}}
-
-// Search API Task 1: import the searchRoutes and store in a constant called searchRoutes
-//{{insert code here}}
-
-
-const pinoHttp = require('pino-http');
-const logger = require('./logger');
-
-app.use(pinoHttp({ logger }));
-
-// Use Routes
-// Gift API Task 2: add the giftRoutes to the server by using the app.use() method.
-//{{insert code here}}
-
-// Search API Task 2: add the searchRoutes to the server by using the app.use() method.
-//{{insert code here}}
-
+// Task 2: Add the giftRoutes to the server using the app.use() method
+app.use('/api/gifts', giftRoutes);
 
 // Global Error Handler
 app.use((err, req, res, next) => {
-    console.error(err);
+    console.error(err.stack);
     res.status(500).send('Internal Server Error');
 });
 
-app.get("/",(req,res)=>{
-    res.send("Inside the server")
-})
-
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+// START THE SERVER SO IT LISTENS ON PORT 3080
+const PORT = process.env.PORT || 3080;
+app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
 });
+
+module.exports = app;
